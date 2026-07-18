@@ -1,8 +1,8 @@
 import easypygamewidgets as epw
 
-import vars
+import variables
 
 
 def render():
-    vars.pg.fill((0, 0, 0))
+    variables.pg.fill((20, 20, 20))
     epw.flip()
