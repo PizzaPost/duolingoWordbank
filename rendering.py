@@ -1,3 +1,5 @@
+import math
+
 import easypygamewidgets as epw
 import pygame
 
@@ -15,15 +17,29 @@ def draw_vertical_gradient(surface, top_color, bottom_color):
         pygame.draw.line(surface, color, (0, y_pos), (width, y_pos))
 
 
+def update_vinyl_position(dt):
+    if variables.vinyl_target_x is None or variables.vinyl_target_y is None: return
+    ease = 1 - math.pow(1 - (1 / 20), dt / 0.01)
+    variables.vinyl_x += (variables.vinyl_target_x - variables.vinyl_x) * ease
+    variables.vinyl_y += (variables.vinyl_target_y - variables.vinyl_y) * ease
+
+
 def draw_menu():
-    vinyl = variables.widgets["vinyl"]
-    pygame.draw.circle(variables.pg, variables.vinyl_color,
-                       (vinyl.x + vinyl.surface.get_width() // 2 + vinyl.current_offset[0], vinyl.y + vinyl.surface.get_width() // 2 + vinyl.current_offset[1]),
-                       vinyl.surface.get_width() // 2 - 50)
+    pygame.draw.circle(variables.pg, (0, 0, 0),
+                       (variables.vinyl_x, variables.vinyl_y), variables.vinyl_width)
+    pygame.draw.circle(variables.pg, variables.vinyl_color, (variables.vinyl_x, variables.vinyl_y),
+                       variables.vinyl_width // 3.5)
+    rotated_cover = pygame.transform.rotozoom(variables.assets["cover"], variables.vinyl_rotation, 1)
+    cover_rect = rotated_cover.get_rect(center=(variables.vinyl_x, variables.vinyl_y))
+    variables.pg.blit(rotated_cover, cover_rect)
+    pygame.draw.circle(variables.pg, (0, 0, 0), (variables.vinyl_x, variables.vinyl_y), 15)
+    variables.vinyl_rotation += 1
 
 
 def render():
+    dt = variables.clock.get_time() / 1000
     draw_vertical_gradient(variables.pg, variables.bg_top, variables.bg_bottom)
     if variables.screen in ("main", "lobby"):
+        update_vinyl_position(dt)
         draw_menu()
     epw.flip()

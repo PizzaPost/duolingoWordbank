@@ -26,6 +26,7 @@ if __name__ != "__main__":
     variables.clock = pygame.time.Clock()
     variables.running = True
 
+
 def clear_widgets(exceptions=[]):
     for widget in list(epw.misc.all_widgets):
         if not isinstance(widget, tuple) and not widget in exceptions:
@@ -37,25 +38,28 @@ def create_main_ui():
     clear_widgets()
 
     functions.get_album_art()
+    variables.vinyl_x = variables.width * 0.75
+    variables.vinyl_y = variables.height * 0.75
 
-    vinyl = pygame.image.load("assets/vinyl.png")
-    vinyl_target_width = variables.width / 2
-    vinyl_scale_factor = vinyl_target_width / vinyl.get_width()
-    vinyl=pygame.transform.smoothscale(vinyl, (vinyl.get_width()*vinyl_scale_factor, vinyl.get_height()*vinyl_scale_factor))
-
-    vinyl_img=pygame.image.load("assets/cover.png")
-    vinyl_img=pygame.transform.smoothscale(vinyl_img, (vinyl.get_width()*vinyl_scale_factor/1.75, vinyl.get_height()*vinyl_scale_factor/1.75))
-
-    variables.widgets.update({"title": epw.Label(text=variables.app_name, anchor_x="center", anchor_y="center", font=epw.Font(font_size=55, bold=True), layer=1001).rotozoom(1, 25)})
-    variables.widgets.update({"lobbycode": epw.Entry(placeholder_text="Enter lobby code", anchor_x="center", anchor_y="center", auto_size=False, width=400).bind("<KEY>", interactions.update_join_button).place(50, 45, mode="%")})
-    variables.widgets.update({"playername": epw.Entry(placeholder_text="Enter your name", anchor_x="center", anchor_y="center", auto_size=False, width=400).bind("<KEY>", interactions.update_join_button).place(50, 55, mode="%")})
-    variables.widgets.update({"join": epw.Button(text="Join", state="disabled", anchor_x="center", anchor_y="bottom", auto_size=False, width=150, command=on_join_pressed).place(50, 95, mode="%")})
-    variables.widgets.update({"settings": epw.Button(text="⚙️", anchor_x="right", anchor_y="top", auto_size=False, width=80, height=80, font=epw.font.emoji_font).place(95, 5, mode="%")})
-    variables.widgets.update({"vinyl_img": epw.Surface(surface=vinyl_img, anchor_x="center", anchor_y="center", layer=998).rotate(999999, 999999).place(75, 75, mode="%")})
-    variables.widgets.update({"vinyl": epw.Surface(surface=vinyl, anchor_x="center", anchor_y="center", layer=999).place(75, 75, mode="%")})
-
+    variables.widgets.update({"title": epw.Label(text=variables.app_name, anchor_x="center", anchor_y="center",
+                                                 font=epw.Font(font_size=55, bold=True), layer=1001).rotozoom(1, 25)})
+    variables.widgets.update({"lobbycode": epw.Entry(placeholder_text="Enter lobby code", anchor_x="center",
+                                                     anchor_y="center", auto_size=False, width=400).bind("<KEY>",
+                                                                                                         interactions.update_join_button).place(
+        50, 45, mode="%")})
+    variables.widgets.update({"playername": epw.Entry(placeholder_text="Enter your name", anchor_x="center",
+                                                      anchor_y="center", auto_size=False, width=400).bind("<KEY>",
+                                                                                                          interactions.update_join_button).place(
+        50, 55, mode="%")})
+    variables.widgets.update({"join": epw.Button(text="Join", state="disabled", anchor_x="center", anchor_y="bottom",
+                                                 auto_size=False, width=150, command=on_join_pressed).place(50, 95,
+                                                                                                            mode="%")})
+    variables.widgets.update({"settings": epw.Button(text="⚙️", anchor_x="right", anchor_y="top", auto_size=False,
+                                                     width=80, height=80, font=epw.font.emoji_font).place(95, 5,
+                                                                                                          mode="%")})
     variables.widgets["title"].place(variables.widgets["lobbycode"].x - 5, variables.widgets["lobbycode"].y - 5)
-    variables.widgets["settings"].place(variables.width - variables.widgets["settings"].y, variables.widgets["settings"].y)
+    variables.widgets["settings"].place(variables.width - variables.widgets["settings"].y,
+                                        variables.widgets["settings"].y)
 
     functions.set_text_color(variables.widgets["title"], (240, 226, 210))
 
@@ -72,18 +76,28 @@ def on_join_pressed():
 
 def create_lobby_ui():
     variables.screen = "lobby"
-    clear_widgets([variables.widgets["vinyl"], variables.widgets["vinyl_img"]])
-    variables.widgets["vinyl"].offset((-200, -100), 30)
-    variables.widgets["vinyl_img"].offset((-200, -100), 30)
+    clear_widgets()
+    variables.vinyl_target_x = variables.width / 1.7
+    variables.vinyl_target_y = variables.height / 1.7
 
-    variables.widgets.update({"lobby_title": epw.Label(text="Lobby", anchor_x="left", anchor_y="top", font=epw.Font(font_size=40, bold=True)).place(5, 5, mode="%")})
-    variables.widgets.update({"lobby_code_label": epw.Label(text=f"Code: {functions.session_code}", anchor_x="right", anchor_y="top", font=epw.Font(font_size=20)).place(95, 5, mode="%")})
-    variables.widgets.update({"ready_label": epw.Label(text="", anchor_x="left", anchor_y="bottom", font=epw.Font(font_size=18)).place(5, 80, mode="%")})
+    variables.widgets.update({"lobby_title": epw.Label(text="Lobby", anchor_x="left", anchor_y="top",
+                                                       font=epw.Font(font_size=40, bold=True))
+                             .place(5, 5, mode="%")})
+    variables.widgets.update({"lobby_code_label": epw.Label(text=f"Code: {functions.session_code}", anchor_x="right",
+                                                            anchor_y="top", font=epw.Font(font_size=20))
+                             .place(95, 5, mode="%")})
+    variables.widgets.update({"ready_label": epw.Label(text="", anchor_x="left", anchor_y="bottom",
+                                                       font=epw.Font(font_size=18))
+                             .place(5, 80, mode="%")})
 
-    variables.widgets.update({"ready": epw.Button(text="Ready", anchor_x="left", anchor_y="bottom", auto_size=False, width=220, command=on_start_pressed).place(5, 95, mode="%")})
-    variables.widgets.update({"leave": epw.Button(text="Leave lobby", anchor_x="right", anchor_y="bottom", auto_size=False, width=220, command=on_leave_pressed).place(95, 95, mode="%")})
+    variables.widgets.update({"ready": epw.Button(text="Ready", anchor_x="left", anchor_y="bottom", auto_size=False,
+                                                  width=220, command=on_start_pressed)
+                             .place(5, 95, mode="%")})
+    variables.widgets.update({"leave": epw.Button(text="Leave lobby", anchor_x="right", anchor_y="bottom",
+                                                  auto_size=False, width=220, command=on_leave_pressed)
+                             .place(95, 95, mode="%")})
 
-    variables.widgets["ready_label"].place(variables.widgets["ready_label"].x, variables.widgets["ready"].y-15)
+    variables.widgets["ready_label"].place(variables.widgets["ready_label"].x, variables.widgets["ready"].y - 15)
 
     functions.set_text_color(variables.widgets["lobby_title"], (240, 226, 210))
     functions.set_text_color(variables.widgets["lobby_code_label"], (200, 178, 150))
@@ -110,7 +124,8 @@ def refresh_lobby_ui():
         variables.widgets[f"player_{cid}"] = label
 
     ready_count, total = functions.get_ready_count()
-    variables.widgets["ready_label"].configure(text=f"{ready_count}/{math.ceil(total/2)} ready to start").place(5, 80, mode="%")
+    variables.widgets["ready_label"].configure(
+        text=f"{ready_count}/{math.ceil(total / 2)} ready to start").place(5, 80, mode="%")
     variables.widgets["ready_label"].place(variables.widgets["ready_label"].x, variables.widgets["ready"].y - 15)
 
 
@@ -128,7 +143,9 @@ def on_leave_pressed():
 def create_round_ui():
     variables.screen = "round"
     clear_widgets()
-    variables.widgets.update({"round_placeholder": epw.Label(text="Round starting...", anchor_x="center", anchor_y="center", font=epw.Font(font_size=40)).place(50, 50, mode="%")})
+    variables.widgets.update({"round_placeholder": epw.Label(text="Round starting...", anchor_x="center",
+                                                             anchor_y="center", font=epw.Font(font_size=40))
+                             .place(50, 50, mode="%")})
     functions.set_text_color(variables.widgets["round_placeholder"], (240, 226, 210))
 
 
