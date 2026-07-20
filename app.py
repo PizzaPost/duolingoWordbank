@@ -7,6 +7,8 @@ if __name__ != "__main__":
     import variables
     import pygame
     import functions
+    import networking
+    import re
 
     pygame.init()
     test_screen = 3
@@ -26,6 +28,8 @@ if __name__ != "__main__":
     variables.clock = pygame.time.Clock()
     variables.running = True
 
+    functions.get_album_art()
+
 
 def clear_widgets(exceptions=[]):
     for widget in list(epw.misc.all_widgets):
@@ -36,10 +40,12 @@ def clear_widgets(exceptions=[]):
 def create_main_ui():
     variables.screen = "main"
     clear_widgets()
-
-    functions.get_album_art()
-    variables.vinyl_x = variables.width * 0.75
-    variables.vinyl_y = variables.height * 0.75
+    if variables.vinyl_x is None:
+        variables.vinyl_x = variables.width * 0.75
+        variables.vinyl_y = variables.height * 0.75
+    else:
+        variables.vinyl_target_x = variables.width * 0.75
+        variables.vinyl_target_y = variables.height * 0.75
 
     variables.widgets.update({"title": epw.Label(text=variables.app_name, anchor_x="center", anchor_y="center",
                                                  font=epw.Font(font_size=55, bold=True), layer=1001).rotozoom(1, 25)})
@@ -67,10 +73,10 @@ def create_main_ui():
 def on_join_pressed():
     code = variables.widgets["lobbycode"].text.strip()
     name = variables.widgets["playername"].text.strip()
-    functions.on_member_update = refresh_lobby_ui
-    functions.on_round_start = create_round_ui
+    networking.on_member_update = refresh_lobby_ui
+    networking.on_round_start = create_round_ui
     variables.is_host = True
-    functions.join_lobby(code, name)
+    networking.join_lobby(code, name)
     create_lobby_ui()
 
 
@@ -83,8 +89,10 @@ def create_lobby_ui():
     variables.widgets.update({"lobby_title": epw.Label(text="Lobby", anchor_x="left", anchor_y="top",
                                                        font=epw.Font(font_size=40, bold=True))
                              .place(5, 5, mode="%")})
-    variables.widgets.update({"lobby_code_label": epw.Label(text=f"Code: {functions.session_code}", anchor_x="right",
-                                                            anchor_y="top", font=epw.Font(font_size=20))
+    variables.widgets.update({"lobby_code_label": epw.Label(
+        text=f"Code: {re.sub(r"[a-zA-Z0-9]", "*", str(networking.session_code))}", anchor_x="right",
+        anchor_y="top", font=epw.Font(font_size=20))
+                             .bind("<RELEASE>", functions.copy_lobby_code)
                              .place(95, 5, mode="%")})
     variables.widgets.update({"ready_label": epw.Label(text="", anchor_x="left", anchor_y="bottom",
                                                        font=epw.Font(font_size=18))
@@ -113,29 +121,29 @@ def refresh_lobby_ui():
         if key.startswith("player_"):
             variables.widgets[key].delete()
             del variables.widgets[key]
-    members = functions.get_members()
+    members = networking.get_members()
     for i, (cid, info) in enumerate(sorted(members.items())):
         y_pos = 12 + i * 6
-        tag = " (you)" if cid == functions.client_id else ""
-        tag += " - ready" if cid in functions.ready else ""
+        tag = " (you)" if cid == networking.client_id else ""
+        tag += " - ready" if cid in networking.ready else ""
         label = epw.Label(text=f"{info["display_name"]}{tag}", anchor_x="left", anchor_y="top",
                           font=epw.Font(font_size=22)).place(5, y_pos, mode="%")
         functions.set_text_color(label, (240, 226, 210))
         variables.widgets[f"player_{cid}"] = label
 
-    ready_count, total = functions.get_ready_count()
+    ready_count, total = networking.get_ready_count()
     variables.widgets["ready_label"].configure(
         text=f"{ready_count}/{math.ceil(total / 2)} ready to start").place(5, 80, mode="%")
     variables.widgets["ready_label"].place(variables.widgets["ready_label"].x, variables.widgets["ready"].y - 15)
 
 
 def on_start_pressed():
-    functions.vote_start()
+    networking.vote_start()
     refresh_lobby_ui()
 
 
 def on_leave_pressed():
-    functions.leave_lobby()
+    networking.leave_lobby()
     variables.is_host = False
     create_main_ui()
 
@@ -157,6 +165,6 @@ def main():
         variables.clock.tick(120)
 
     if variables.screen in ("lobby", "round"):
-        functions.leave_lobby()
+        networking.leave_lobby()
     pygame.quit()
     exit(0)

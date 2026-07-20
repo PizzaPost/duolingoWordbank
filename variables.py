@@ -16,10 +16,13 @@ vinyl_target_x = None
 vinyl_target_y = None
 vinyl_width = 400
 vinyl_rotation = 0
+vinyl_rotating = False
+vinyl_track = None
 bg_top = (18, 14, 22)
 bg_bottom = (32, 20, 24)
 screen: str = "menu"
 is_host: bool = False
 bg_time: float = 0.0
+temp_path = None
 
 assets = {"cover": pygame.image.load("assets/cover.png")}

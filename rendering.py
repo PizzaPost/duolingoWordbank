@@ -24,7 +24,7 @@ def update_vinyl_position(dt):
     variables.vinyl_y += (variables.vinyl_target_y - variables.vinyl_y) * ease
 
 
-def draw_menu():
+def draw_vinyl():
     pygame.draw.circle(variables.pg, (0, 0, 0),
                        (variables.vinyl_x, variables.vinyl_y), variables.vinyl_width)
     pygame.draw.circle(variables.pg, variables.vinyl_color, (variables.vinyl_x, variables.vinyl_y),
@@ -33,7 +33,8 @@ def draw_menu():
     cover_rect = rotated_cover.get_rect(center=(variables.vinyl_x, variables.vinyl_y))
     variables.pg.blit(rotated_cover, cover_rect)
     pygame.draw.circle(variables.pg, (0, 0, 0), (variables.vinyl_x, variables.vinyl_y), 15)
-    variables.vinyl_rotation += 1
+    if variables.vinyl_rotating:
+        variables.vinyl_rotation += 1
 
 
 def render():
@@ -41,5 +42,5 @@ def render():
     draw_vertical_gradient(variables.pg, variables.bg_top, variables.bg_bottom)
     if variables.screen in ("main", "lobby"):
         update_vinyl_position(dt)
-        draw_menu()
+        draw_vinyl()
     epw.flip()
