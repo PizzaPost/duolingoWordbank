@@ -4,6 +4,7 @@ import random
 import urllib
 
 import pygame
+from spotify_scraper import SpotifyClient
 
 import networking
 import variables
@@ -69,6 +70,7 @@ def get_album_art(track_url=None):
         cover_surface = pygame.image.load(io.BytesIO(raw_bytes))
         circular_cover = circular_crop(cover_surface)
         pygame.image.save(circular_cover, "assets/cover.png")
+        variables.assets["cover"] = circular_cover
         print(f"Erfolgreich heruntergeladen")
     except Exception as e:
         print(f"Ein Fehler ist aufgetreten: {e}")
@@ -76,3 +78,53 @@ def get_album_art(track_url=None):
 
 def copy_lobby_code():
     pygame.scrap.put_text(str(networking.session_code))
+
+
+def update_cursor():
+    want_hand = variables.vinyl_hovered
+    if want_hand != variables.cursor_is_hand:
+        pygame.mouse.set_cursor(variables.hand_cursor if want_hand else variables.arrow_cursor)
+        variables.cursor_is_hand = want_hand
+
+
+def get_fitting_artists():
+    limit = variables.required_to_win * 2 + 10
+    genre = variables.genre
+    timespan_from = variables.timespan_from
+    timespan_to = variables.timespan_to
+
+    client = SpotifyClient()
+    print(f"Suche nach Künstlern im Genre '{genre}' via Web-Scraping...")
+    query = f'genre:"{genre}"'
+
+    try:
+        search_results = client.search(query, types=["artist"], limit=limit)
+        artists = search_results.artists
+    except Exception as e:
+        print(f"Fehler bei der Suche: {e}")
+        return
+
+    fitting_artists = []
+    for artist in artists[:limit]:
+        print(artist)
+        try:
+            full_artist = client.get_artist(artist.id)
+            print(f"{artist.name}: albums={len(full_artist.albums)}, singles={len(full_artist.singles)}")
+            variables.fitting_releases = []
+            for ref in (*full_artist.albums, *full_artist.singles):
+                try:
+                    album = client.get_album(ref.id)
+                    print(f"  {album.name}: release_date={album.release_date}")
+                    if album.release_date is not None and timespan_from <= album.release_date <= timespan_to:
+                        variables.fitting_releases.append(album)
+                except Exception as e:
+                    print(f"Fehler beim Laden von Album {ref.id}: {e}")
+
+            if variables.fitting_releases:
+                fitting_artists.append({
+                    "name": artist.name,
+                    "id": artist.id,
+                    "releases": variables.fitting_releases,
+                })
+        except Exception as e:
+            print(f"Fehler bei Künstler {artist.name}: {e}")

@@ -1,5 +1,3 @@
-import math
-
 if __name__ != "__main__":
     import rendering
     import easypygamewidgets as epw
@@ -9,6 +7,8 @@ if __name__ != "__main__":
     import functions
     import networking
     import re
+    import math
+    import threading
 
     pygame.init()
     test_screen = 3
@@ -91,7 +91,7 @@ def create_lobby_ui():
                              .place(5, 5, mode="%")})
     variables.widgets.update({"lobby_code_label": epw.Label(
         text=f"Code: {re.sub(r"[a-zA-Z0-9]", "*", str(networking.session_code))}", anchor_x="right",
-        anchor_y="top", font=epw.Font(font_size=20))
+        anchor_y="top", font=epw.Font(font_size=20), active_hover_cursor=variables.hand_cursor)
                              .bind("<RELEASE>", functions.copy_lobby_code)
                              .place(95, 5, mode="%")})
     variables.widgets.update({"ready_label": epw.Label(text="", anchor_x="left", anchor_y="bottom",
@@ -114,22 +114,44 @@ def create_lobby_ui():
     refresh_lobby_ui()
 
 
+player_row_color = (240, 226, 210)
+fade_in_steps = 25
+
+
+def fade_in_step(widget, step):
+    if widget not in epw.misc.all_widgets:
+        return
+    alpha = round(255 * min(step, fade_in_steps) / fade_in_steps)
+    functions.set_text_color(widget, (*player_row_color, alpha))
+    if step < fade_in_steps:
+        epw.misc.schedule(lambda: fade_in_step(widget, step + 1), 1)
+
+
 def refresh_lobby_ui():
     if variables.screen != "lobby":
         return
+    members = networking.get_members()
+    current_ids = set(members.keys())
     for key in list(variables.widgets.keys()):
         if key.startswith("player_"):
-            variables.widgets[key].delete()
-            del variables.widgets[key]
-    members = networking.get_members()
+            cid = key[len("player_"):]
+            if cid not in current_ids:
+                variables.widgets[key].delete()
+                del variables.widgets[key]
     for i, (cid, info) in enumerate(sorted(members.items())):
         y_pos = 12 + i * 6
         tag = " (you)" if cid == networking.client_id else ""
         tag += " - ready" if cid in networking.ready else ""
-        label = epw.Label(text=f"{info["display_name"]}{tag}", anchor_x="left", anchor_y="top",
-                          font=epw.Font(font_size=22)).place(5, y_pos, mode="%")
-        functions.set_text_color(label, (240, 226, 210))
-        variables.widgets[f"player_{cid}"] = label
+        text = f"{info["display_name"]}{tag}"
+        key = f"player_{cid}"
+        if key in variables.widgets:
+            variables.widgets[key].configure(text=text).place(5, y_pos, mode="%")
+        else:
+            label = epw.Label(text=text, anchor_x="left", anchor_y="top",
+                              font=epw.Font(font_size=22)).place(5, y_pos, mode="%")
+            functions.set_text_color(label, (*player_row_color, 0))
+            variables.widgets[key] = label
+            fade_in_step(label, 1)
 
     ready_count, total = networking.get_ready_count()
     variables.widgets["ready_label"].configure(
@@ -148,12 +170,31 @@ def on_leave_pressed():
     create_main_ui()
 
 
+def update_round_creation_text(starting_index=None):
+    texts = ["Searching songs", "Still searching...", "Validating found songs", "Almost there!",
+             "Please stand by", "Taking a little longer than expected"]
+    if starting_index is not None:
+        new_index = starting_index
+    else:
+        current_text = variables.widgets["round_placeholder"].text
+        new_index = texts.index(current_text) + 1
+        if new_index == len(texts):
+            new_index = 0
+    variables.widgets["round_placeholder"].configure(text=texts[new_index]).place(50, 50, mode="%")
+    if variables.fitting_releases:
+        clear_widgets()
+    else:
+        epw.schedule(update_round_creation_text, 300)
+
+
 def create_round_ui():
     variables.screen = "round"
     clear_widgets()
+    threading.Thread(target=functions.get_fitting_artists, daemon=True).start()
     variables.widgets.update({"round_placeholder": epw.Label(text="Round starting...", anchor_x="center",
                                                              anchor_y="center", font=epw.Font(font_size=40))
                              .place(50, 50, mode="%")})
+    epw.schedule(lambda: update_round_creation_text(starting_index=0), 400)
     functions.set_text_color(variables.widgets["round_placeholder"], (240, 226, 210))
 
 
